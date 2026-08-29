@@ -855,9 +855,12 @@ function renderMonths(){
 /* ---------------------------- clientes ----------------------------- */
 function renderClients(){
   var C = D.clients;
-  var conSesiones = C.filter(function(c){ return parseInt(c.massages,10)>0; });
+  /* "con alguna sesión" sería siempre 662 y no diría nada: todos los
+     clientes tienen historial. Lo que informa es cuántos siguen vivos. */
+  var activos = C.filter(function(c){
+    var d = c.days_since_last; return d!==null && d!==undefined && parseInt(d,10)<=90; });
   document.getElementById("tClients").textContent = C.length;
-  document.getElementById("dClients").textContent = conSesiones.length+" con alguna sesión";
+  document.getElementById("dClients").textContent = activos.length+" activos (90 días)";
   document.getElementById("tDorm").textContent = D.dormant.length;
   var dormEur = sum(D.dormant,"income");
   document.getElementById("dDorm").textContent = dormEur===null?"":eur0.format(dormEur)+" históricos";
