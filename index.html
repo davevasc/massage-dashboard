@@ -704,7 +704,7 @@ function renderResumen(){
 
      Un mes sin filas si vale 0: no hubo sesiones, y eso se sabe. Es un
      cero de verdad, no un desconocido. */
-  var añoNow = hoy.getFullYear(), mesNow = hoy.getMonth();
+  var anioNow = hoy.getFullYear(), mesNow = hoy.getMonth();
   function ytd(year, hastaMes, campo){
     var t = 0, hay = false;
     M.forEach(function(r){
@@ -715,40 +715,40 @@ function renderResumen(){
     });
     return hay ? t : 0;
   }
-  var yNowInc = ytd(añoNow, 11, "income"), yPrevInc = ytd(añoNow-1, mesNow, "income");
+  var yNowInc = ytd(anioNow, 11, "income"), yPrevInc = ytd(anioNow-1, mesNow, "income");
   var yNowRow = null, yPrevRow = null;
   Y.forEach(function(r){
     var f = d(r.year).getFullYear();
-    if(f===añoNow) yNowRow = r; if(f===añoNow-1) yPrevRow = r;
+    if(f===anioNow) yNowRow = r; if(f===anioNow-1) yPrevRow = r;
   });
-  document.getElementById("lYear").textContent = "Año "+añoNow;
+  document.getElementById("lYear").textContent = "Año "+anioNow;
   document.getElementById("tYear").textContent = eur0.format(yNowInc);
   if(yPrevRow){
     var dy = yNowInc - yPrevInc;
     document.getElementById("dYear").innerHTML =
       '<span class="'+(dy>=0?"up":"down")+'">'+(dy>=0?"+":"")+eur0.format(dy)+
-      '</span> vs '+(añoNow-1)+' a '+MES[mesNow];
+      '</span> vs '+(anioNow-1)+' a '+MES[mesNow];
   }
 
   /* El mes en curso todavía no ha terminado: se dice, en vez de dejar que
      parezca una caída. */
   var mNow = M[M.length-1], mPrev = M[M.length-2];
   var mNowD = d(mNow.month);
-  var enCurso = (mNowD.getFullYear()===añoNow && mNowD.getMonth()===mesNow);
+  var enCurso = (mNowD.getFullYear()===anioNow && mNowD.getMonth()===mesNow);
   document.getElementById("lMonth").textContent = mLabel(mNow.month)+(enCurso?" · en curso":"");
   document.getElementById("tMonth").textContent = eur0.format(num(mNow.income));
   if(mPrev){
     var dm = num(mNow.income)-num(mPrev.income);
     document.getElementById("dMonth").innerHTML = enCurso
-      ? 'lleva '+hoy.getDate()+' de '+new Date(añoNow,mesNow+1,0).getDate()+' días'
+      ? 'lleva '+hoy.getDate()+' de '+new Date(anioNow,mesNow+1,0).getDate()+' días'
       : '<span class="'+(dm>=0?"up":"down")+'">'+(dm>=0?"+":"")+eur0.format(dm)+'</span> vs '+mLabel(mPrev.month);
   }
-  document.getElementById("lRate").textContent = "EUR/hora "+añoNow;
+  document.getElementById("lRate").textContent = "EUR/hora "+anioNow;
   var rate = yNowRow? num(yNowRow.rate_per_hour) : null;
   document.getElementById("tRate").innerHTML = rate===null? unk("Ninguna sesión cobrada este año") : eur2.format(rate);
   var rPrev = yPrevRow? num(yPrevRow.rate_per_hour) : null;
   document.getElementById("dRate").innerHTML = (rate!==null&&rPrev!==null)
-    ? '<span class="'+(rate>=rPrev?"up":"down")+'">'+(rate>=rPrev?"+":"")+eur2.format(rate-rPrev)+'</span> vs '+(añoNow-1)
+    ? '<span class="'+(rate>=rPrev?"up":"down")+'">'+(rate>=rPrev?"+":"")+eur2.format(rate-rPrev)+'</span> vs '+(anioNow-1)
     : "sobre tarifa, solo cobradas";
 
   /* --- por año --- */
@@ -955,17 +955,21 @@ function renderRetention(){
 
   /* Cuánto vale que repitan: una sola vez frente a más de una. */
   var C = D.clients.filter(function(c){ return parseInt(c.massages,10)>0; });
-  var una = C.filter(function(c){ return parseInt(c.massages,10)===1; });
-  var más = C.filter(function(c){ return parseInt(c.massages,10)>1; });
+  var unaVez  = C.filter(function(c){ return parseInt(c.massages,10)===1; });
+  var repiten = C.filter(function(c){ return parseInt(c.massages,10)>1; });
   function avg(a){ var s=sum(a,"income"); return (s===null||!a.length)?null:s/a.length; }
-  var aU = avg(una), aM = avg(más), sU = sum(una,"income"), sM = sum(más,"income");
+  var aU = avg(unaVez), aM = avg(repiten);
+  var sU = sum(unaVez,"income"), sM = sum(repiten,"income");
   var totalC = (sU||0)+(sM||0);
+  /* Sin la guarda, una base sin ingresos daría "NaN %". Hoy no puede pasar,
+     pero un NaN en pantalla es de las cosas que hacen dudar de todo lo demás. */
+  function pctC(v){ return totalC>0 ? nf1.format(100*(v||0)/totalC)+" %" : unk(); }
   document.getElementById("tblRepeat").innerHTML =
     '<tr><th>Grupo</th><th>Clientes</th><th>Ingresos</th><th>% del total</th><th>Media</th></tr>'+
-    '<tr><td>Vinieron una vez</td><td>'+una.length+'</td><td>'+money0s(sU)+'</td><td>'+
-      nf1.format(100*(sU||0)/totalC)+' %</td><td>'+money0s(aU)+'</td></tr>'+
-    '<tr><td>Repitieron</td><td>'+más.length+'</td><td>'+money0s(sM)+'</td><td>'+
-      nf1.format(100*(sM||0)/totalC)+' %</td><td>'+money0s(aM)+'</td></tr>';
+    '<tr><td>Vinieron una vez</td><td>'+unaVez.length+'</td><td>'+money0s(sU)+'</td><td>'+
+      pctC(sU)+'</td><td>'+money0s(aU)+'</td></tr>'+
+    '<tr><td>Repitieron</td><td>'+repiten.length+'</td><td>'+money0s(sM)+'</td><td>'+
+      pctC(sM)+'</td><td>'+money0s(aM)+'</td></tr>';
   document.getElementById("nRepeat").innerHTML =
     (aU&&aM? "Un cliente que repite vale <strong>"+nf1.format(aM/aU)+" veces más</strong>. ":"")+
     "Por eso la ventana entre el día 25 y el 60 es donde hay algo que hacer.";
