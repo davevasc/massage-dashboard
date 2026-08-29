@@ -444,10 +444,24 @@ function ensureFresh(){
    tener todas las filas, así que el límite del servidor puede cambiar
    sin que esto se entere. */
 function sbSelect(view,params){
+  params = params || {};
+
+  /* Un tope explicito se pide por la cabecera Range, NUNCA por ?limit=.
+
+     Mezclar las dos cosas rompe de verdad, y asi se rompio en produccion:
+     con ?limit=12 la primera pagina va bien, pero `count=exact` devuelve
+     el total SIN aplicar el limite (2.204, no 12), asi que el bucle cree
+     que faltan filas y pide la segunda pagina con Range: 12-1011. Ahi
+     PostgREST resta el desplazamiento al limite, le sale un numero
+     negativo y responde 416 PGRST103 "Limit should be greater than or
+     equal to zero". Con el tope en el Range hay un solo mecanismo y no
+     hay nada que mezclar. */
+  var tope = params.limit ? parseInt(params.limit,10) : null;
+
   var qs = [];
-  for(var k in params) if(params.hasOwnProperty(k)) qs.push(k+"="+params[k]);
+  for(var k in params) if(params.hasOwnProperty(k) && k!=="limit") qs.push(k+"="+params[k]);
   var base = "/rest/v1/"+view+(qs.length?("?"+qs.join("&")):"");
-  var rows = [], PAGE = 1000;
+  var rows = [], PAGE = tope ? Math.min(tope,1000) : 1000;
 
   function page(from){
     return ensureFresh().then(function(){
@@ -464,9 +478,12 @@ function sbSelect(view,params){
       var total = parseInt((cr.split("/")[1]||""),10);
       return r.json().then(function(j){
         rows = rows.concat(j);
+        /* El tope manda sobre el total: `total` es el numero de filas que
+           HAY, no las que se han pedido. */
+        if(tope && rows.length >= tope) return rows.slice(0,tope);
         /* Avanzar por las filas que han llegado, NO por PAGE: si el
-           servidor devuelve una página más corta de la pedida, sumar PAGE
-           se saltaría filas en silencio y el total saldría más bajo y
+           servidor devuelve una pagina mas corta de la pedida, sumar PAGE
+           se saltaria filas en silencio y el total saldria mas bajo y
            creible. */
         if(!isNaN(total) && rows.length < total && j.length > 0) return page(from+j.length);
         return rows;
