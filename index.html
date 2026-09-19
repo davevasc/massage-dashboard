@@ -1046,7 +1046,8 @@ function renderAvisos(){
     row2("Propinas antes del 05/09/2022","iban sumadas dentro del importe y no hay forma de separarlas. El EUR/h de esos meses está algo inflado.")+
     row2("Tipo de masaje antes del 05/12/2025", nf0.format(totalSes-clasif)+" masajes sin clasificar. No se reparten ni se enseñan como categoría: son desconocidos.")+
     row2("Cancelaciones y cambios de hora","nunca se anotaron. El cero de esas columnas es 'no había donde apuntarlo'.")+
-    row2("Hora de las sesiones históricas","ninguna de las "+nf0.format(totalSes)+" tiene hora todavía. Es la Fase 7.")+
+    /* El 111 va fijo A PROPOSITO: son las horas deducidas el 19/09/2026, un hecho cerrado que no crece. */
+    row2("Hora de las sesiones históricas","la de 111 masajes de 2019 a 2025 es <strong>aproximada</strong>: no se sabe la real, y se dedujo de las otras sesiones del cliente o de la hora típica de ese año. Están marcadas en la nota de cada sesión y no valen para estudiar a qué hora se dan los masajes.")+
     '</div>';
 
   renderChecks();
